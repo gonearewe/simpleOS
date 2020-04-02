@@ -10,12 +10,15 @@ panic = "abort"
 [profile.release]
 panic = "abort"
 
+[package.metadata.bootimage]
+test-args = ["-device", "isa-debug-exit,iobase=0xf4,iosize=0x04"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 bootloader = "0.6.0"
 volatile = "0.2.3"
 spin = "0.4.9"
+x86_64 = "0.7.5"
 
 [dependencies.lazy_static]
 version = "1.0"
