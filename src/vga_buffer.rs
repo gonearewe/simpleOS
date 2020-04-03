@@ -3,6 +3,9 @@ use volatile::Volatile;
 
 use lazy_static::lazy_static;
 
+#[cfg(test)]
+use crate::{serial_print, serial_println};
+
 #[macro_export]
 macro_rules! print {
     ($($arg:tt)*) => ($crate::vga_buffer::_print(format_args!($($arg)*)));
@@ -145,4 +148,27 @@ struct ScreenChar {
     // a colored ascii character that can be printed to the screen
     ascii_char: u8,
     color_code: ColorCode,
+}
+
+#[test_case]
+fn test_println_many() {
+    serial_print!("test_println_many ... ");
+    for _ in 0..200 {
+        println!("test_println_many output");
+    }
+    serial_println!("[OK]");
+}
+
+#[test_case]
+fn test_println_output() {
+    serial_print!("test_println_output ... ");
+
+    let s = "Some test string that fits on a single line";
+    println!("{}", s);
+    for (i, c) in s.chars().enumerate() {
+        let screen_char = WRITER.lock().buffer.chars[BUFFER_HEIGHT - 2][i].read();
+        assert_eq!(char::from(screen_char.ascii_char), c);
+    }
+
+    serial_println!("[OK]");
 }

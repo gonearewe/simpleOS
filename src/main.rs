@@ -1,16 +1,16 @@
 #![no_std]
 #![no_main]
 #![feature(custom_test_frameworks)]
-#![test_runner(crate::test_runner)]
+#![test_runner(simple_os::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 
 use core::panic::PanicInfo;
 
-mod vga_buffer;
+use simple_os::println;
 
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
-    println!("Hello World !!!");
+    println!("Hello World{}", "!");
 
     #[cfg(test)]
         test_main();
@@ -18,31 +18,16 @@ pub extern "C" fn _start() -> ! {
     loop {}
 }
 
-// we must implement our own panic!
+// OS panic will print info to the terminal and trap into a loop.
+#[cfg(not(test))]
 #[panic_handler]
-fn panic(_info: &PanicInfo) -> ! {
-    println!("{}", _info);
+fn panic(info: &PanicInfo) -> ! {
+    println!("{}", info);
     loop {}
 }
 
-#[test_case]
-fn trivial_test() {
-    print!("trivial assertion ... ");
-    assert_eq!(1, 1);
-    println!("[OK]")
-}
-
 #[cfg(test)]
-fn test_runner(tests: &[&dyn Fn()]) {
-    println!("Running {} tests", tests.len());
-    for test in tests {
-        test();
-    }
-}
-
-#[derive(Copy, Clone, Eq, PartialEq, Debug)]
-#[repr(u32)]
-pub enum QemuExitCode {
-    Success = 0x10,
-    Failure = 0x11,
+#[panic_handler]
+fn panic(info: &PanicInfo) -> ! {
+    simple_os::test_panic_handler(info)
 }
