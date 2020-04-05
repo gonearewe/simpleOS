@@ -10,18 +10,17 @@ use simple_os::serial_print;
 pub extern "C" fn _start() -> ! {
     should_fail();
     serial_println!("[test did not panic]");
-    exit_qemu(QemuExitCode::Failed);
+    exit_qemu(QemuExitCode::Failure);
     loop {}
 }
 
 #[panic_handler]
 fn panic(_info: &PanicInfo) -> ! {
-    serial_println!("[ok]");
+    serial_println!("[OK]");
     exit_qemu(QemuExitCode::Success);
     loop {}
 }
 
-#[test_case]
 fn should_fail() {
     serial_print!("should_fail ... ");
     assert_eq!(0, 1);

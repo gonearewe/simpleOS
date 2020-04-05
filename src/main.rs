@@ -10,10 +10,15 @@ use simple_os::println;
 
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
-    simple_os::init();
-
     println!("Hello World {}", "!!!");
+    simple_os::init();
     x86_64::instructions::interrupts::int3();
+
+    fn stack_overflow() {
+        stack_overflow(); // for each recursion, the return address is pushed
+    }
+    // trigger a stack overflow
+    stack_overflow();
 
     #[cfg(test)]
         test_main();
