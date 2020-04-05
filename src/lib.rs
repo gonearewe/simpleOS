@@ -15,6 +15,16 @@ pub mod gdt;
 pub fn init() {
     gdt::init();
     interrupts::init_idt();
+    unsafe { interrupts::PICS.lock().initialize(); }
+    x86_64::instructions::interrupts::enable();
+}
+
+/// Halt allows the CPU to enter a sleep state in which
+/// it consumes much less energy than an empty loop.
+pub fn hlt_loop() -> ! {
+    loop {
+        x86_64::instructions::hlt();
+    }
 }
 
 /// Entry point for `cargo xtest`
@@ -23,7 +33,7 @@ pub fn init() {
 pub extern "C" fn _start() -> ! {
     init();
     test_main();
-    loop {}
+    hlt_loop()
 }
 
 pub fn test_runner(tests: &[&dyn Fn()]) {
@@ -37,7 +47,7 @@ pub fn test_runner(tests: &[&dyn Fn()]) {
 pub fn test_panic_handler(_info: &PanicInfo) -> ! {
     serial_println!("[FAILED] {}",_info);
     exit_qemu(QemuExitCode::Failure);
-    loop {}
+    hlt_loop()
 }
 
 // Panic served for tests will print info to the serial port(in the end to the host) and exit qemu.

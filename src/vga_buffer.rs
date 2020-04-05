@@ -17,10 +17,16 @@ macro_rules! println {
     ($($arg:tt)*) => ($crate::print!("{}\n", format_args!($($arg)*)));
 }
 
+/// Prints the given formatted string to the VGA text buffer
+/// through the global `WRITER` instance.
 #[doc(hidden)]
 pub fn _print(args: core::fmt::Arguments) {
     use core::fmt::Write;
-    WRITER.lock().write_fmt(args).unwrap();
+    use x86_64::instructions::interrupts;
+    interrupts::without_interrupts(|| {
+        // disable the interrupts when acquiring the lock to avoid deadlocks
+        WRITER.lock().write_fmt(args).unwrap();
+    })
 }
 
 lazy_static! {
@@ -164,11 +170,15 @@ fn test_println_output() {
     serial_print!("test_println_output ... ");
 
     let s = "Some test string that fits on a single line";
-    println!("{}", s);
-    for (i, c) in s.chars().enumerate() {
-        let screen_char = WRITER.lock().buffer.chars[BUFFER_HEIGHT - 2][i].read();
-        assert_eq!(char::from(screen_char.ascii_char), c);
-    }
+    use x86_64::instructions::interrupts;
+    interrupts::without_interrupts(|| {
+        let mut writer = WRITER.lock();
+        writeln!(writer, "\n{}", s).expect("writeln failed");
+        for (i, c) in s.chars().enumerate() {
+            let screen_char = writer.buffer.chars[BUFFER_HEIGHT - 2][i].read();
+            assert_eq!(char::from(screen_char.ascii_char), c);
+        }
+    });
 
     serial_println!("[OK]");
 }
